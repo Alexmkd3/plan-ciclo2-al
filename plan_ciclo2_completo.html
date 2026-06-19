@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ciclo 2 — Nutrición & Entrenamiento</title>
+<style>
+:root {
+  --bg:#0d0f14; --surface:#161920; --surface2:#1e2230; --border:#272c3e;
+  --accent:#7c9eff; --green:#4ade80; --orange:#fb923c; --pink:#f472b6;
+  --purple:#a78bfa; --yellow:#fde68a; --red:#f87171;
+  --text:#e8eaf6; --text2:#8b90b8; --text3:#4a5068;
+  --train:#34d399; --rest:#64748b;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;}
+
+/* ── TOP NAV ── */
+.top-nav{background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;height:52px;position:sticky;top:0;z-index:200;gap:8px;}
+.app-title{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);flex:1;}
+.tab-btn{padding:6px 14px;border:none;background:none;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;border-radius:6px;transition:all .15s;}
+.tab-btn.active{background:var(--accent);color:#0d0f14;}
+.tab-btn:hover:not(.active){background:var(--surface2);}
+
+/* ── DAY NAV ── */
+.day-nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 16px;display:flex;gap:2px;overflow-x:auto;position:sticky;top:52px;z-index:100;}
+.day-btn{flex-shrink:0;padding:10px 12px;border:none;background:none;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;display:flex;flex-direction:column;align-items:center;gap:2px;transition:all .15s;}
+.day-btn .dlabel{font-size:9px;color:var(--text3);font-weight:400;}
+.day-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
+.day-btn.train-day{color:var(--train);}
+.day-btn.train-day.active{color:var(--train);border-bottom-color:var(--train);}
+
+/* ── MAIN ── */
+.main{padding:16px 18px;max-width:700px;margin:0 auto;}
+
+/* ── PHASE BANNER ── */
+.phase-banner{border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;}
+.phase-banner.transition{background:rgba(124,158,255,.1);border:1px solid rgba(124,158,255,.25);}
+.phase-banner.accumA{background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);}
+.phase-banner.deload{background:rgba(251,146,60,.1);border:1px solid rgba(251,146,60,.25);}
+.phase-banner.accumB{background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.25);}
+.phase-banner.intensity{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);}
+.phase-name{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;}
+.phase-detail{font-size:11px;color:var(--text2);}
+.week-sel{display:flex;gap:6px;flex-wrap:wrap;}
+.week-chip{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text2);transition:all .15s;}
+.week-chip.active{background:var(--accent);color:#0d0f14;border-color:var(--accent);}
+
+/* ── MACRO SUMMARY ── */
+.macro-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
+.macro-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center;}
+.macro-val{font-size:20px;font-weight:800;line-height:1;}
+.macro-val.p{color:#60a5fa;} .macro-val.c{color:var(--green);} .macro-val.g{color:var(--orange);}
+.macro-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;}
+.prog-bar{height:4px;background:var(--border);border-radius:2px;margin-top:6px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:2px;}
+.prog-fill.p{background:#60a5fa;} .prog-fill.c{background:var(--green);} .prog-fill.g{background:var(--orange);}
+
+/* ── MEAL CARD ── */
+.meal-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden;}
+.meal-hdr{padding:11px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;}
+.meal-time{font-size:10px;color:var(--text3);font-weight:600;min-width:52px;}
+.meal-tag{font-size:9px;text-transform:uppercase;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap;}
+.meal-tag.pre{background:rgba(253,230,138,.15);color:var(--yellow);}
+.meal-tag.post{background:rgba(96,165,250,.15);color:#60a5fa;}
+.meal-tag.main{background:rgba(74,222,128,.15);color:var(--green);}
+.meal-tag.snack{background:rgba(244,114,182,.15);color:var(--pink);}
+.meal-tag.last{background:rgba(251,146,60,.15);color:var(--orange);}
+.meal-name{flex:1;font-size:12px;font-weight:600;}
+.meal-macros{display:flex;gap:7px;font-size:10px;}
+.mi-p{color:#60a5fa;} .mi-c{color:var(--green);} .mi-g{color:var(--orange);}
+.chevron{color:var(--text3);font-size:14px;transition:transform .2s;}
+.chevron.open{transform:rotate(180deg);}
+.meal-body{padding:0 14px 12px;border-top:1px solid var(--border);display:none;}
+.meal-body.open{display:block;}
+.meal-items{font-size:11px;color:var(--text2);margin-top:10px;line-height:1.8;}
+.meal-item{display:flex;gap:6px;align-items:flex-start;}
+.mi-dot{color:var(--accent);flex-shrink:0;margin-top:2px;}
+.new-badge{font-size:9px;background:rgba(167,139,250,.2);color:var(--purple);padding:1px 5px;border-radius:3px;font-weight:700;margin-left:4px;}
+.macro-detail{display:flex;gap:14px;margin-top:10px;padding-top:9px;border-top:1px solid var(--border);}
+.md-item{text-align:center;}
+.md-val{font-size:15px;font-weight:700;}
+.md-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;}
+.tip{margin-top:9px;background:rgba(124,158,255,.07);border:1px solid rgba(124,158,255,.18);border-radius:6px;padding:8px 10px;font-size:11px;color:var(--accent);line-height:1.6;}
+
+/* ── EXERCISE CARD ── */
+.ex-section{margin-bottom:14px;}
+.ex-section-title{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;padding:0 2px;}
+.ex-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden;}
+.ex-hdr{padding:11px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;}
+.ex-num{width:22px;height:22px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--text2);flex-shrink:0;}
+.ex-name{flex:1;font-size:12px;font-weight:600;}
+.ex-tags{display:flex;gap:4px;}
+.ex-tag{font-size:9px;padding:2px 6px;border-radius:3px;font-weight:700;}
+.ex-tag.push{background:rgba(251,146,60,.15);color:var(--orange);}
+.ex-tag.pull{background:rgba(96,165,250,.15);color:#60a5fa;}
+.ex-tag.leg{background:rgba(74,222,128,.15);color:var(--green);}
+.ex-tag.gem{background:rgba(244,114,182,.15);color:var(--pink);}
+.ex-tag.new{background:rgba(167,139,250,.2);color:var(--purple);}
+.ex-body{padding:0 14px 12px;border-top:1px solid var(--border);display:none;}
+.ex-body.open{display:block;}
+.ex-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px;}
+.ex-stat{background:var(--surface2);border-radius:6px;padding:6px;text-align:center;}
+.ex-stat-val{font-size:13px;font-weight:700;}
+.ex-stat-lbl{font-size:9px;color:var(--text3);margin-top:1px;}
+.week-sets{margin-top:10px;}
+.ws-title{font-size:10px;color:var(--text3);margin-bottom:6px;}
+.ws-row{display:flex;gap:4px;flex-wrap:wrap;}
+.ws-chip{padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;background:var(--surface2);color:var(--text2);}
+.ws-chip.active-week{background:var(--accent);color:#0d0f14;}
+.ex-note{margin-top:8px;font-size:11px;color:var(--text2);background:var(--surface2);border-radius:6px;padding:7px 9px;line-height:1.5;}
+
+/* ── REST DAY ── */
+.rest-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center;color:var(--text2);}
+.rest-icon{font-size:32px;margin-bottom:8px;}
+.rest-title{font-size:14px;font-weight:700;margin-bottom:4px;}
+.rest-sub{font-size:12px;}
+
+/* ── WEEK TIMELINE ── */
+.timeline{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:14px;}
+.tl-title{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;}
+.tl-row{display:flex;gap:3px;}
+.tl-week{flex:1;text-align:center;}
+.tl-bar{height:8px;border-radius:4px;margin-bottom:4px;}
+.tl-bar.transition{background:#7c9eff;}
+.tl-bar.accumA{background:var(--green);}
+.tl-bar.mini{background:var(--orange);}
+.tl-bar.accumB{background:var(--purple);}
+.tl-bar.intensity{background:var(--red);}
+.tl-bar.deload{background:var(--rest);}
+.tl-bar.active-w{outline:2px solid white;outline-offset:1px;}
+.tl-num{font-size:9px;color:var(--text3);}
+.tl-legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;}
+.tl-leg-item{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text2);}
+.tl-dot{width:8px;height:8px;border-radius:2px;}
+
+/* ── BANNER ── */
+.cutoff-banner{background:rgba(251,146,60,.1);border:1px solid rgba(251,146,60,.3);border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:11px;color:var(--orange);font-weight:600;}
+.new-legend{background:rgba(167,139,250,.07);border:1px solid rgba(167,139,250,.2);border-radius:8px;padding:9px 12px;margin-bottom:12px;font-size:11px;color:var(--purple);line-height:1.6;}
+.new-legend strong{display:block;margin-bottom:3px;font-size:12px;}
+</style>
+</head>
+<body>
+
+<div class="top-nav">
+  <div class="app-title">Ciclo 2</div>
+  <button class="tab-btn active" id="tab-nut" onclick="switchTab('nut')">🥗 Nutrición</button>
+  <button class="tab-btn" id="tab-gym" onclick="switchTab('gym')">🏋 Entrenamiento</button>
+</div>
+
+<div class="day-nav" id="day-nav"></div>
+<div class="main" id="main"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// DATA — NUTRICIÓN
+// ═══════════════════════════════════════════════════════
+const MEALS = {
+  lun:{train:true,macros:{p:180,c:161,g:62,k:1917},meals:[
+    {time:'5:40 AM',tag:'pre',tn:'Pre-Entreno',name:'Banano + Queso pera',p:4,c:13,g:3,items:[{t:'55g banano'},{t:'18g queso pera Alkosto'}],tip:'40-50 min antes. Glucosa rápida + aminoácidos.'},
+    {time:'8:30 AM',tag:'post',tn:'Desayuno post-entreno',name:'Huevos · Toning · Fruta · Chía',p:29,c:36,g:24,items:[{t:'3 huevos Avinal · 55g banano · 80g papaya · 200ml Toning · 10g chía (externo, fijo)'}],tip:''},
+    {time:'1:00 PM',tag:'main',tn:'Almuerzo',name:'Pollo · Arroz · Espinaca · Aceite',p:70,c:54,g:13,items:[{t:'200g pechuga pollo Bucanero (cocida)'},{t:'180g arroz blanco cocido'},{t:'100g espinaca salteada',n:true},{t:'7ml aceite · cúrcuma + pimienta + jengibre',n:true}],tip:'Espinaca + aceite + cúrcuma + pimienta negra: absorción curcumina 20×.'},
+    {time:'4:30 PM',tag:'snack',tn:'Merienda (caseína)',name:'Yogurt · Frutos rojos · Matcha',p:28,c:26,g:2,items:[{t:'300g yogurt griego Pasco'},{t:'100g frutos rojos congelados',n:true},{t:'Matcha 3g',n:true}],tip:'Matcha separado 1h de alimentos con hierro no-hemo.'},
+    {time:'6:30 PM',tag:'last',tn:'Última comida ⏰',name:'Cerdo · Papa enfriada · Brócoli',p:49,c:33,g:19,items:[{t:'160g lomo cerdo (cocido)'},{t:'150g papa pastusa cocida y enfriada',n:true},{t:'100g brócoli al vapor'},{t:'7ml aceite · jengibre',n:true}],tip:'Papa enfriada = almidón resistente tipo 3.'}
+  ]},
+  mar:{train:false,macros:{p:178,c:141,g:66,k:1870},meals:[
+    {time:'8:30 AM',tag:'post',tn:'Desayuno',name:'Huevos · Toning · Fruta · Chía',p:29,c:36,g:24,items:[{t:'3 huevos · 55g banano · 80g papaya · 200ml Toning · 10g chía (fijo)'}],tip:'Día de descanso: sin pre-entreno.'},
+    {time:'1:00 PM',tag:'main',tn:'Almuerzo',name:'Tilapia · Lentejas · Espinaca',p:56,c:34,g:9,items:[{t:'180g tilapia al horno'},{t:'150g lentejas cocidas (remojar 8h)',n:true},{t:'100g espinaca salteada',n:true},{t:'6ml aceite · cúrcuma + pimienta + jengibre',n:true}],tip:'Remojar lentejas reduce fitatos 30-35%.'},
+    {time:'4:30 PM',tag:'snack',tn:'Merienda (caseína)',name:'Cottage · Aguacate · Frutos rojos',p:32,c:27,g:23,items:[{t:'250g cottage Breakstone\'s'},{t:'75g aguacate',n:true},{t:'100g frutos rojos congelados',n:true}],tip:'Aguacate: martes y viernes (rota). Grasa monoinsaturada + antioxidantes liposolubles.'},
+    {time:'6:30 PM',tag:'last',tn:'Última comida ⏰',name:'Pollo · Avena · Zucchini',p:61,c:44,g:10,items:[{t:'150g pechuga pollo (cocida)'},{t:'60g avena copos gruesos cocida',n:true},{t:'100g zucchini salteado'},{t:'Jengibre + cúrcuma',n:true}],tip:'Avena en cena descanso: betaglucano prolonga digestión nocturna.'}
+  ]},
+  mie:{train:true,macros:{p:175,c:148,g:54,k:1778},meals:[
+    {time:'5:40 AM',tag:'pre',tn:'Pre-Entreno',name:'Banano + Queso pera',p:4,c:13,g:3,items:[{t:'55g banano · 18g queso pera'}],tip:'Pierna A: sesión más demandante. Hidratación clave a 2,600 msnm.'},
+    {time:'8:30 AM',tag:'post',tn:'Desayuno post-entreno',name:'Huevos · Toning · Fruta · Chía',p:29,c:36,g:24,items:[{t:'3 huevos · 55g banano · 80g papaya · 200ml Toning · 10g chía (fijo)'}],tip:''},
+    {time:'1:00 PM',tag:'main',tn:'Almuerzo',name:'Pollo · Avena · Espinaca · Aceite',p:64,c:44,g:16,items:[{t:'180g pechuga pollo (cocida)'},{t:'60g avena copos gruesos',n:true},{t:'100g espinaca salteada',n:true},{t:'6ml aceite · cúrcuma + pimienta',n:true}],tip:'Avena post-Pierna A: repone glucógeno sin pico glucémico del arroz.'},
+    {time:'4:30 PM',tag:'snack',tn:'Merienda (caseína)',name:'Yogurt · Frutos rojos · Matcha',p:28,c:26,g:2,items:[{t:'300g yogurt griego Pasco'},{t:'100g frutos rojos congelados',n:true},{t:'Matcha 3g',n:true}],tip:'Antocianinas frutos rojos: reduce DOMS cuádriceps post Pierna A.'},
+    {time:'6:30 PM',tag:'last',tn:'Última comida ⏰',name:'Tilapia · Papa enfriada · Espinaca',p:50,c:29,g:9,items:[{t:'160g tilapia a la plancha'},{t:'150g papa pastusa cocida y enfriada',n:true},{t:'100g espinaca',n:true},{t:'5ml aceite · jengibre',n:true}],tip:'Tilapia en cena: 2.5g grasa/100g — equilibra el desayuno (24g grasa).'}
+  ]},
+  jue:{train:true,macros:{p:172,c:196,g:49,k:1915},meals:[
+    {time:'5:40 AM',tag:'pre',tn:'Pre-Entreno',name:'Banano + Queso pera',p:4,c:13,g:3,items:[{t:'55g banano · 18g queso pera'}],tip:''},
+    {time:'8:30 AM',tag:'post',tn:'Desayuno post-entreno',name:'Huevos · Toning · Fruta · Chía',p:29,c:36,g:24,items:[{t:'3 huevos · 55g banano · 80g papaya · 200ml Toning · 10g chía (fijo)'}],tip:''},
+    {time:'1:00 PM',tag:'main',tn:'Almuerzo',name:'Pollo · Arroz · Zanahoria · Pimentón',p:60,c:53,g:12,items:[{t:'180g pechuga pollo (cocida)'},{t:'160g arroz blanco cocido'},{t:'100g zanahoria + pimentón'},{t:'6ml aceite · cúrcuma + pimienta',n:true}],tip:''},
+    {time:'4:30 PM',tag:'snack',tn:'Merienda (caseína)',name:'Yogurt · Manzana · Matcha',p:27,c:32,g:2,items:[{t:'300g yogurt griego Pasco'},{t:'1 manzana Gala (130g)'},{t:'Matcha 3g',n:true}],tip:'Sin aguacate jueves — la cena de carga sube el volumen total.'},
+    {time:'6:30 PM',tag:'last',tn:'⭐ Cena Carb-Loading (Jue→Vie)',name:'Tilapia · Papa · Avena · Jengibre',p:52,c:63,g:8,items:[{t:'150g tilapia a la plancha'},{t:'130g papa pastusa enfriada',n:true},{t:'60g avena copos gruesos',n:true},{t:'Jengibre + cúrcuma · sin aceite',n:true}],tip:'C63 esta cena carga glucógeno para Pierna B del viernes.'}
+  ]},
+  vie:{train:true,macros:{p:177,c:158,g:69,k:1963},meals:[
+    {time:'5:40 AM',tag:'pre',tn:'Pre-Entreno',name:'Banano + Queso pera',p:4,c:13,g:3,items:[{t:'55g banano · 18g queso pera'}],tip:''},
+    {time:'8:30 AM',tag:'post',tn:'Desayuno post-entreno',name:'Huevos · Toning · Fruta · Chía',p:29,c:36,g:24,items:[{t:'3 huevos · 55g banano · 80g papaya · 200ml Toning · 10g chía (fijo)'}],tip:''},
+    {time:'1:00 PM',tag:'main',tn:'Almuerzo',name:'Cerdo · Avena · Brócoli · Aceite',p:59,c:48,g:22,items:[{t:'180g lomo cerdo (cocido)'},{t:'60g avena copos gruesos',n:true},{t:'100g brócoli al vapor'},{t:'5ml aceite · cúrcuma',n:true}],tip:''},
+    {time:'4:30 PM',tag:'snack',tn:'Merienda (caseína)',name:'Yogurt · Aguacate · Frutos rojos',p:30,c:32,g:14,items:[{t:'300g yogurt griego Pasco'},{t:'75g aguacate',n:true},{t:'100g frutos rojos congelados',n:true}],tip:'Viernes: aguacate (rota con martes). Ácido oleico reduce inflamación fin de semana.'},
+    {time:'6:30 PM',tag:'last',tn:'Última comida ⏰',name:'Pollo · Papa enfriada · Espinaca',p:55,c:29,g:6,items:[{t:'160g pechuga pollo (cocida)'},{t:'150g papa pastusa enfriada',n:true},{t:'100g espinaca',n:true},{t:'Jengibre · sin aceite',n:true}],tip:'Sin aceite: aguacate de merienda ya cubre el presupuesto de G65.'}
+  ]},
+  sab:{train:false,macros:{p:173,c:142,g:54,k:1746},meals:[
+    {time:'8:30 AM',tag:'post',tn:'Desayuno',name:'Huevos · Toning · Fruta · Chía',p:29,c:36,g:24,items:[{t:'3 huevos · 55g banano · 80g papaya · 200ml Toning · 10g chía (fijo)'}],tip:'Día de Meal Prep. Remojar legumbres, cocinar + enfriar papas.'},
+    {time:'1:00 PM',tag:'main',tn:'Almuerzo',name:'Tilapia · Caraota · Espinaca',p:67,c:48,g:9,items:[{t:'180g tilapia al horno'},{t:'200g caraota negra cocida',n:true},{t:'100g espinaca salteada',n:true},{t:'5ml aceite · cúrcuma + pimienta + jengibre',n:true}],tip:'Caraota negra: mayor contenido antocianinas entre legumbres. Activa Akkermansia muciniphila.'},
+    {time:'4:30 PM',tag:'snack',tn:'Merienda (caseína)',name:'Yogurt · Frutos rojos',p:28,c:25,g:2,items:[{t:'300g yogurt griego Pasco'},{t:'100g frutos rojos congelados',n:true}],tip:'Sin aguacate sábado.'},
+    {time:'6:30 PM',tag:'last',tn:'Última comida ⏰',name:'Cerdo · Papa enfriada · Brócoli',p:49,c:33,g:19,items:[{t:'160g lomo cerdo (cocido)'},{t:'150g papa pastusa enfriada',n:true},{t:'100g brócoli al vapor'},{t:'7ml aceite · jengibre',n:true}],tip:''}
+  ]},
+  dom:{train:false,macros:{p:183,c:162,g:64,k:1957},meals:[
+    {time:'8:30 AM',tag:'post',tn:'Desayuno',name:'Huevos · Toning · Fruta · Chía',p:29,c:36,g:24,items:[{t:'3 huevos · 55g banano · 80g papaya · 200ml Toning · 10g chía (fijo)'}],tip:'Cardio Z2 (bici 30 min): antes o después del desayuno según preferencia.'},
+    {time:'1:00 PM',tag:'main',tn:'Almuerzo',name:'Cerdo · Avena · Lentejas · Zucchini',p:72,c:74,g:22,items:[{t:'180g lomo cerdo (cocido)'},{t:'60g avena copos gruesos',n:true},{t:'150g lentejas cocidas',n:true},{t:'100g zucchini salteado'},{t:'5ml aceite · cúrcuma + pimienta + jengibre',n:true}],tip:'Mayor saciedad del plan: triple fuente proteína (animal+legumbre+avena).'},
+    {time:'4:30 PM',tag:'snack',tn:'Merienda (caseína)',name:'Cottage · Manzana · Matcha',p:28,c:26,g:12,items:[{t:'250g cottage Breakstone\'s'},{t:'1 manzana Gala (130g)'},{t:'Matcha 3g',n:true}],tip:'Cottage: caseína micelar de digestión más lenta que yogurt. Ideal antes de la noche.'},
+    {time:'6:30 PM',tag:'last',tn:'Última comida ⏰',name:'Pollo · Papa enfriada · Espinaca',p:54,c:26,g:6,items:[{t:'160g pechuga pollo (cocida)'},{t:'130g papa pastusa enfriada',n:true},{t:'100g espinaca',n:true},{t:'Jengibre · sin aceite',n:true}],tip:''}
+  ]}
+};
+
+// ═══════════════════════════════════════════════════════
+// DATA — ENTRENAMIENTO
+// ═══════════════════════════════════════════════════════
+const PHASES = [
+  {id:'transition', name:'Transición', weeks:[1,2], color:'#7c9eff', rpe:'7', desc:'Técnica y conexión neuromuscular'},
+  {id:'accumA',     name:'Acumulación A', weeks:[3,4], color:'#4ade80', rpe:'8', desc:'Volumen moderado-alto'},
+  {id:'mini',       name:'Mini-Deload', weeks:[5], color:'#fb923c', rpe:'6', desc:'Deload obligatorio'},
+  {id:'accumB',     name:'Acumulación B', weeks:[6,7,8], color:'#a78bfa', rpe:'8-9', desc:'Volumen máximo'},
+  {id:'intensity',  name:'Intensidad', weeks:[9], color:'#f87171', rpe:'9', desc:'Alta intensidad, volumen reducido'},
+  {id:'deload',     name:'Deload Final', weeks:[10], color:'#64748b', rpe:'5-6', desc:'Recuperación completa'},
+];
+
+// series por fase [transition, accumA, mini, accumB, intensity, deload]
+// index: semana 1=0,2=1,3=2,4=3,5=4,6=5,7=6,8=7,9=8,10=9
+const weekPhase = [0,0,1,1,2,3,3,3,4,5]; // índice de fase por semana (0-9)
+
+const EXERCISES = {
+  lun: { label:'Torso A', icon:'💪', color:'#fb923c',
+    groups:[
+      {name:'Tracción', exs:[
+        {id:'la1',name:'Remo con Barra (Overhand)',tags:['pull'],sets:[3,4,3,4,2,4,4,4,4,2],reps:'8–10',rpe:['7','8','7','8','6','8','8-9','8-9','9','6'],rest:'2-3 min',tempo:'3-1-2-0',note:'Compound principal espalda. Base del Ciclo 2.'},
+        {id:'la2',name:'Jalón al Pecho (agarre ancho)',tags:['pull'],sets:[3,3,2,3,1,3,3,4,3,2],reps:'10–12',rpe:['7','8','6','8','6','8','8','8-9','9','6'],rest:'2 min',tempo:'3-1-2-0',note:'Complemento Remo. Diferente vector de tracción.'},
+      ]},
+      {name:'Empuje', exs:[
+        {id:'la3',name:'Press Banca Plano (Barra)',tags:['push'],sets:[3,4,3,4,2,4,4,4,4,2],reps:'6–8',rpe:['7','8','7','8','6','8','8-9','8-9','9','6'],rest:'3 min',tempo:'3-1-2-0',note:'Compuesto principal. Inicio del Ciclo 2 –5% vs C1 final.'},
+        {id:'la4',name:'Press Inclinado Mancuernas 30°',tags:['push'],sets:[3,3,2,3,1,3,3,3,0,2],reps:'10–12',rpe:['7','8','6','8','6','8','8','8','—','6'],rest:'2 min',tempo:'3-0-2-1',note:'Énfasis clavicular. Pausa 1 seg en pecho.'},
+        {id:'la5',name:'Elevaciones Laterales Mancuernas',tags:['push'],sets:[3,3,2,3,1,3,3,3,0,2],reps:'12–15',rpe:['7','8','6','8','6','8','8','8','—','6'],rest:'90 seg',tempo:'2-1-2-0',note:'Deltoides medial. Codos ligeramente flexionados.'},
+      ]},
+      {name:'Bíceps (final)', exs:[
+        {id:'la6',name:'Curl Bíceps Barra EZ',tags:['pull'],sets:[2,3,2,3,1,3,3,3,3,2],reps:'10–12',rpe:['7','8','6','8','6','8','8','8-9','9','6'],rest:'90 seg',tempo:'3-1-2-0',note:'Pre-fatigado por remo+jalón → pocas series necesarias.'},
+        {id:'la7',name:'Curl Martillo Mancuernas',tags:['pull'],sets:[2,2,0,2,0,2,2,2,0,0],reps:'12–15',rpe:['7','8','—','8','—','8','8','8','—','—'],rest:'90 seg',tempo:'2-1-2-0',note:'Braquial y braquirradial. Agarre neutro.'},
+      ]},
+    ]},
+  mar: {rest:true, label:'Descanso', icon:'😴'},
+  mie: { label:'Pierna A', icon:'🦵', color:'#4ade80',
+    groups:[
+      {name:'Cadera (dominante)', exs:[
+        {id:'pa1',name:'Peso Muerto Rumano (Barra)',tags:['leg'],sets:[3,4,3,4,2,4,4,4,4,2],reps:'8–10',rpe:['7','8','7','8','6','8','8-9','8-9','9','6'],rest:'3 min',tempo:'3-1-1-0',note:'Isquiotibiales + glúteos. +1 set vs Ciclo 1.'},
+        {id:'pa2',name:'Hip Extensión 45°',tags:['leg'],sets:[3,3,0,3,0,3,3,3,0,0],reps:'12–15',rpe:['7','8','—','8','—','8','8','8','—','—'],rest:'90 seg',tempo:'2-1-2-0',note:'Glúteo reducido vs C1 (era MRV). Se elimina en deload e intensidad.'},
+        {id:'pa3',name:'Abducción Cadera Isométrica',tags:['leg'],sets:[3,3,2,3,0,3,3,3,0,0],reps:'15–20',rpe:['7','8','7','8','—','8','8','8','—','—'],rest:'90 seg',tempo:'2-3-2-0',note:'Pausa isométrica 3 seg. Progresión por tiempo. Stack máx 400kg.'},
+      ]},
+      {name:'Rodilla (dominante)', exs:[
+        {id:'pa4',name:'Prensa de Piernas (Cuádriceps)',tags:['leg'],sets:[3,4,3,4,2,4,4,4,3,2],reps:'10–12',rpe:['7','8','7','8','6','8','8-9','8-9','9','6'],rest:'2-3 min',tempo:'3-1-2-0',note:'Cuádriceps principal. +3 sets vs Ciclo 1.'},
+        {id:'pa5',name:'Extensión de Cuádriceps',tags:['leg'],sets:[3,3,2,3,1,3,3,4,3,2],reps:'12–15',rpe:['7','8','7','8','6','8','8-9','8-9','8','6'],rest:'90 seg',tempo:'2-1-2-0',note:'Aislamiento quad. Volumen aumentado vs Ciclo 1.'},
+      ]},
+      {name:'Gemelos', exs:[
+        {id:'pa6',name:'Elevación de Talones de Pie',tags:['gem'],sets:[2,2,2,3,2,3,3,4,2,2],reps:'12–15',rpe:['7','8','7','9','7','8-9','8-9','9','7','6'],rest:'90 seg',tempo:'2-2-2-0',note:'Nuevo Ciclo 2 (0 series en C1). Gastrocnemio.'},
+      ]},
+    ]},
+  jue: { label:'Torso B', icon:'🔝', color:'#7c9eff',
+    groups:[
+      {name:'Tracción', exs:[
+        {id:'tb1',name:'Jalón al Pecho (agarre neutro)',tags:['pull'],sets:[3,4,3,4,2,4,4,4,4,2],reps:'10–12',rpe:['7','8','7','8','6','8','8-9','8-9','9','6'],rest:'2-3 min',tempo:'3-1-2-0',note:'Agarre neutro diferencia de Torso A (ancho). Variante por fatiga.'},
+        {id:'tb2',name:'Face Pulls con Cuerda (Pausa)',tags:['pull'],sets:[3,3,2,4,2,4,4,4,2,2],reps:'15–20',rpe:['7','8','7','8','7','8','8','8','7','6'],rest:'90 seg',tempo:'2-2-2-0',note:'Pausa 2 seg manos atrás. Salud del hombro + deltoides posterior.'},
+      ]},
+      {name:'Empuje', exs:[
+        {id:'tb3',name:'Press Militar de Pie (Barra)',tags:['push'],sets:[3,4,3,4,2,4,4,4,4,2],reps:'6–8',rpe:['7','8','7','8','6','8','8-9','8-9','9','6'],rest:'2-3 min',tempo:'3-1-2-0',note:'Inicio C2: –5kg vs C1 final (referencia C1: 45kg → 40kg).'},
+        {id:'tb4',name:'Fondos en Paralelas (énfasis pecho)',tags:['push'],sets:[3,3,2,3,0,3,3,3,0,2],reps:'8–10',rpe:['7','8','7','8','—','8','8','8','—','6'],rest:'90 seg',tempo:'3-0-2-0',note:'Torso inclinado para énfasis pectoral inferior.'},
+        {id:'tb5',name:'Elevaciones Laterales (Polea Baja)',tags:['push'],sets:[2,3,0,3,0,3,3,3,0,0],reps:'12–15',rpe:['7','8','—','8','—','8','8','8','—','—'],rest:'90 seg',tempo:'2-1-2-0',note:'Nuevo Ciclo 2. Polea baja = tensión constante todo el rango.'},
+      ]},
+      {name:'Tríceps (final)', exs:[
+        {id:'tb6',name:'Presión Tríceps Polea (Barra V)',tags:['push'],sets:[2,3,2,3,1,3,3,3,3,2],reps:'12–15',rpe:['7','8','6','8','6','8','8','8-9','9','6'],rest:'90 seg',tempo:'2-0-2-0',note:'Pre-fatigado por press militar y fondos.'},
+        {id:'tb7',name:'Extensión Tríceps sobre Cabeza',tags:['push'],sets:[2,2,0,2,0,2,2,2,0,0],reps:'12–15',rpe:['7','8','—','8','—','8','8','8','—','—'],rest:'90 seg',tempo:'3-0-2-0',note:'Porción larga del tríceps. Brazo elevado.'},
+      ]},
+    ]},
+  vie: { label:'Pierna B', icon:'🦿', color:'#a78bfa',
+    groups:[
+      {name:'Rodilla (dominante)', exs:[
+        {id:'pb1',name:'Sentadilla con Barra (Trasera)',tags:['leg'],sets:[3,4,3,4,2,4,4,4,4,2],reps:'6–8',rpe:['7','8','7','8','6','8','8-9','8-9','9','6'],rest:'3-4 min',tempo:'3-1-2-0',note:'Compuesto principal Pierna B. Inicio C2: –5% vs C1.'},
+        {id:'pb2',name:'Zancadas Caminando (Mancuernas)',tags:['leg'],sets:[3,3,2,3,1,3,3,3,0,2],reps:'10–12/pierna',rpe:['7','8','6','8','6','8','8','8','—','6'],rest:'2 min',tempo:'2-0-2-0',note:'Quad + glúteo. Paso largo para énfasis glúteo.'},
+        {id:'pb3',name:'Extensión Cuádriceps (drop set)',tags:['leg'],sets:[3,3,2,4,2,4,4,4,3,2],reps:'12–15',rpe:['7','8','7','9','7','8-9','9','9','8','6'],rest:'90 seg',tempo:'2-1-2-0',note:'+3 sets vs C1. Drop set en Acum B para maximizar quad.'},
+      ]},
+      {name:'Cadera (dominante)', exs:[
+        {id:'pb4',name:'Curl Femoral Sentado (Máquina)',tags:['leg'],sets:[3,3,2,3,2,3,3,4,3,2],reps:'10–12',rpe:['7','8','6','8','6','8','8-9','8-9','9','6'],rest:'90 seg',tempo:'3-1-2-0',note:'+1 set vs C1. Isquiotibiales aislados.'},
+        {id:'pb5',name:'Hip Thrust (Barra)',tags:['leg'],sets:[3,3,0,3,0,3,3,3,0,0],reps:'10–12',rpe:['7','8','—','8','—','8','8','8','—','—'],rest:'2 min',tempo:'2-2-1-0',note:'Glúteo reducido vs C1 (MRV). Pausa 2 seg arriba.'},
+      ]},
+      {name:'Gemelos', exs:[
+        {id:'pb6',name:'Elevación de Talones Sentado',tags:['gem'],sets:[2,2,2,3,2,3,3,4,2,2],reps:'15–20',rpe:['7','8','7','9','7','8-9','8-9','9','7','6'],rest:'90 seg',tempo:'2-2-2-0',note:'Sóleo (pie plano). Complementa elevación de pie del Torso A.'},
+      ]},
+    ]},
+  sab: {rest:true, label:'Descanso', icon:'🛒'},
+  dom: {rest:true, cardio:true, label:'Cardio Z2', icon:'🚴'},
+};
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let tab = 'nut';
+let day = 'lun';
+let week = 1; // semana actual (1-10)
+
+const DAYS_ORDER = ['lun','mar','mie','jue','vie','sab','dom'];
+const DAY_LABELS = {lun:'Lun',mar:'Mar',mie:'Mié',jue:'Jue',vie:'Vie',sab:'Sáb',dom:'Dom'};
+const DAY_SUB = {lun:'Torso A',mar:'Descanso',mie:'Pierna A',jue:'Torso B',vie:'Pierna B',sab:'Descanso',dom:'Cardio Z2'};
+
+function getPhaseForWeek(w){
+  return PHASES[weekPhase[w-1]];
+}
+
+function switchTab(t){
+  tab = t;
+  document.getElementById('tab-nut').className = 'tab-btn' + (t==='nut'?' active':'');
+  document.getElementById('tab-gym').className = 'tab-btn' + (t==='gym'?' active':'');
+  buildDayNav();
+  render();
+}
+
+function setDay(d,btn){
+  day = d;
+  document.querySelectorAll('.day-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+function setWeek(w){
+  week = w;
+  render();
+}
+
+function buildDayNav(){
+  const nav = document.getElementById('day-nav');
+  nav.innerHTML = DAYS_ORDER.map(d=>{
+    const isTrain = MEALS[d]?.train || (EXERCISES[d] && !EXERCISES[d].rest);
+    const isActive = d===day;
+    return `<button class="day-btn ${isTrain&&tab==='gym'?'train-day':''} ${isActive?'active':''}" onclick="setDay('${d}',this)">
+      ${DAY_LABELS[d]}<span class="dlabel">${DAY_SUB[d]}</span>
+    </button>`;
+  }).join('');
+}
+
+function toggleMeal(id){
+  const b=document.getElementById('mb-'+id);
+  const c=document.getElementById('mc-'+id);
+  const isOpen=b.classList.toggle('open');
+  c.classList.toggle('open',isOpen);
+}
+
+function toggleEx(id){
+  const b=document.getElementById('eb-'+id);
+  const c=document.getElementById('ec-'+id);
+  const isOpen=b.classList.toggle('open');
+  c.classList.toggle('open',isOpen);
+}
+
+function renderNut(){
+  const d = MEALS[day];
+  const pPct=Math.min(100,Math.round(d.macros.p/170*100));
+  const cPct=Math.min(100,Math.round(d.macros.c/160*100));
+  const gPct=Math.min(100,Math.round(d.macros.g/65*100));
+  let h='';
+  h+=`<div class="new-legend"><strong>🆕 Nuevos alimentos — Ciclo 2</strong>Espinaca · Avena copos gruesos · Aguacate (mar/vie) · Frutos rojos congelados · Papa enfriada · Cúrcuma+pimienta · Jengibre · Matcha</div>`;
+  h+=`<div class="cutoff-banner">⏰ Última comida 6:30 PM · Sin suplementos · Proteína 100% alimentos reales</div>`;
+  h+=`<div class="macro-row">
+    <div class="macro-card"><div class="macro-val p">${d.macros.p}g</div><div class="macro-lbl">Proteína</div><div class="prog-bar"><div class="prog-fill p" style="width:${pPct}%"></div></div></div>
+    <div class="macro-card"><div class="macro-val c">${d.macros.c}g</div><div class="macro-lbl">Carbos</div><div class="prog-bar"><div class="prog-fill c" style="width:${cPct}%"></div></div></div>
+    <div class="macro-card"><div class="macro-val g">${d.macros.g}g</div><div class="macro-lbl">Grasa</div><div class="prog-bar"><div class="prog-fill g" style="width:${gPct}%"></div></div></div>
+    <div class="macro-card"><div class="macro-val" style="font-size:16px">${d.macros.k}</div><div class="macro-lbl">kcal</div></div>
+  </div>`;
+  d.meals.forEach((m,i)=>{
+    const id=day+'-'+i;
+    const kcal=Math.round(m.p*4+m.c*4+m.g*9);
+    h+=`<div class="meal-card">
+      <div class="meal-hdr" onclick="toggleMeal('${id}')">
+        <div class="meal-time">${m.time}</div>
+        <div class="meal-tag ${m.tag}">${m.tn}</div>
+        <div class="meal-name">${m.name}</div>
+        <div class="meal-macros"><span class="mi-p">${m.p}P</span><span class="mi-c">${m.c}C</span><span class="mi-g">${m.g}G</span></div>
+        <div class="chevron" id="mc-${id}">▾</div>
+      </div>
+      <div class="meal-body" id="mb-${id}">
+        <div class="meal-items">${m.items.map(it=>`<div class="meal-item"><span class="mi-dot">▸</span><span>${it.t}${it.n?'<span class="new-badge">NUEVO</span>':''}</span></div>`).join('')}</div>
+        <div class="macro-detail">
+          <div class="md-item"><div class="md-val" style="color:#60a5fa">${m.p}g</div><div class="md-lbl">Proteína</div></div>
+          <div class="md-item"><div class="md-val" style="color:#4ade80">${m.c}g</div><div class="md-lbl">Carbos</div></div>
+          <div class="md-item"><div class="md-val" style="color:#fb923c">${m.g}g</div><div class="md-lbl">Grasa</div></div>
+          <div class="md-item"><div class="md-val">${kcal}</div><div class="md-lbl">kcal</div></div>
+        </div>
+        ${m.tip?`<div class="tip">💡 ${m.tip}</div>`:''}
+      </div>
+    </div>`;
+  });
+  return h;
+}
+
+function renderGym(){
+  const phase = getPhaseForWeek(week);
+  const wi = week-1; // índice 0-9
+  let h='';
+
+  // Timeline
+  h+=`<div class="timeline"><div class="tl-title">10 Semanas · Ciclo 2</div><div class="tl-row">`;
+  for(let w2=1;w2<=10;w2++){
+    const ph=PHASES[weekPhase[w2-1]];
+    const isActive=w2===week;
+    h+=`<div class="tl-week" onclick="setWeek(${w2})" style="cursor:pointer">
+      <div class="tl-bar ${ph.id} ${isActive?'active-w':''}"></div>
+      <div class="tl-num" style="${isActive?'color:white;font-weight:700':''}">${w2}</div>
+    </div>`;
+  }
+  h+=`</div><div class="tl-legend">`;
+  PHASES.forEach(p=>{h+=`<div class="tl-leg-item"><div class="tl-dot" style="background:${p.color}"></div>${p.name}</div>`;});
+  h+=`</div></div>`;
+
+  // Phase banner
+  const phaseCls = phase.id==='mini'?'deload':phase.id;
+  h+=`<div class="phase-banner ${phaseCls}">
+    <div>
+      <div class="phase-name" style="color:${phase.color}">Semana ${week} · ${phase.name}</div>
+      <div class="phase-detail">RPE objetivo: ${phase.rpe} · ${phase.desc}</div>
+    </div>
+  </div>`;
+
+  const ex = EXERCISES[day];
+
+  if(ex.rest){
+    const icon = ex.cardio?'🚴':'😴';
+    const title = ex.cardio?'Cardio Zona 2':'Descanso Activo';
+    const sub = ex.cardio?'30 min bicicleta estática · FC 120-140 bpm · conversación posible':'Sin entrenamiento de fuerza · Caminata ligera si se desea';
+    h+=`<div class="rest-card"><div class="rest-icon">${icon}</div><div class="rest-title">${title}</div><div class="rest-sub">${sub}</div></div>`;
+    return h;
+  }
+
+  // Week selector
+  h+=`<div style="margin-bottom:12px;"><div style="font-size:10px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em;">Seleccionar semana</div><div class="week-sel">`;
+  for(let w2=1;w2<=10;w2++){
+    const ph=PHASES[weekPhase[w2-1]];
+    h+=`<div class="week-chip ${w2===week?'active':''}" onclick="setWeek(${w2})" style="${w2===week?`background:${ph.color};border-color:${ph.color};color:#0d0f14`:''}">S${w2}</div>`;
+  }
+  h+=`</div></div>`;
+
+  // Exercises
+  ex.groups.forEach(g=>{
+    h+=`<div class="ex-section"><div class="ex-section-title">${g.name}</div>`;
+    g.exs.forEach((e,idx)=>{
+      const sets = e.sets[wi]||0;
+      const rpe = Array.isArray(e.rpe)?e.rpe[wi]:e.rpe;
+      const isOff = sets===0;
+      h+=`<div class="ex-card" style="${isOff?'opacity:.4':''}">
+        <div class="ex-hdr" onclick="${isOff?'':(`toggleEx('${e.id}')`)}" style="${isOff?'cursor:default':''}">
+          <div class="ex-num">${idx+1}</div>
+          <div class="ex-name">${e.name}</div>
+          <div class="ex-tags">${e.tags.map(t=>`<span class="ex-tag ${t}">${t==='gem'?'Gm':t==='push'?'Emp':t==='pull'?'Tra':t==='leg'?'Pie':'New'}</span>`).join('')}</div>
+          <div style="font-size:11px;color:var(--accent);font-weight:700;margin-left:auto;padding-left:8px">${isOff?'OFF':sets+'×'+e.reps}</div>
+          ${isOff?'':`<div class="chevron" id="ec-${e.id}">▾</div>`}
+        </div>
+        ${isOff?'':`<div class="ex-body" id="eb-${e.id}">
+          <div class="ex-grid">
+            <div class="ex-stat"><div class="ex-stat-val" style="color:var(--accent)">${sets}</div><div class="ex-stat-lbl">Series</div></div>
+            <div class="ex-stat"><div class="ex-stat-val" style="color:var(--green)">${e.reps}</div><div class="ex-stat-lbl">Reps</div></div>
+            <div class="ex-stat"><div class="ex-stat-val" style="color:var(--orange)">${rpe}</div><div class="ex-stat-lbl">RPE</div></div>
+            <div class="ex-stat"><div class="ex-stat-val" style="color:var(--pink)">${e.rest}</div><div class="ex-stat-lbl">Descanso</div></div>
+            <div class="ex-stat"><div class="ex-stat-val" style="color:var(--yellow);font-size:11px">${e.tempo}</div><div class="ex-stat-lbl">Tempo</div></div>
+          </div>
+          <div class="week-sets">
+            <div class="ws-title">Series por semana:</div>
+            <div class="ws-row">${e.sets.map((s,i)=>{
+              const ph=PHASES[weekPhase[i]];
+              return `<div class="ws-chip ${i===wi?'active-week':''}" style="${i===wi?`background:${ph.color};color:#0d0f14`:''}">${s===0?'OFF':s+'s'}<br><span style="font-size:8px;opacity:.7">S${i+1}</span></div>`;
+            }).join('')}</div>
+          </div>
+          <div class="ex-note">📝 ${e.note}</div>
+        </div>`}
+      </div>`;
+    });
+    h+='</div>';
+  });
+  return h;
+}
+
+function render(){
+  document.getElementById('main').innerHTML = tab==='nut' ? renderNut() : renderGym();
+}
+
+// Init
+const todayMap={1:'lun',2:'mar',3:'mie',4:'jue',5:'vie',6:'sab',0:'dom'};
+day = todayMap[new Date().getDay()]||'lun';
+buildDayNav();
+render();
+</script>
+</body>
+</html>
